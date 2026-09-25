@@ -33,16 +33,23 @@
         box-shadow: none;
     }
 
-    /* Górna belka nawigacji na telefonie */
+    /* Górna belka nawigacji na telefonie: 2 rzędy (Brand + Pasek akcji) */
     .app-nav {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
         padding: 4px 6px;
         gap: 0.35rem;
         flex-wrap: nowrap;
-        overflow: hidden;
+        overflow: visible;
+        flex-shrink: 0;
     }
 
     .brand-badge {
-        gap: 0.25rem;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        gap: 0.3rem;
         flex-shrink: 0;
     }
 
@@ -53,11 +60,16 @@
 
     .brand-info {
         height: 28px;
-        padding: 0 0.4rem;
+        padding: 0 0.5rem;
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .brand-title {
-        font-size: 0.68rem;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .brand-sub {
@@ -67,14 +79,16 @@
     .nav-actions {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
+        gap: 0.3rem;
+        width: 100%;
+        max-width: 100%;
         flex-wrap: nowrap;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        max-width: 100%;
-        padding-bottom: 1px;
+        padding-bottom: 2px;
+        flex-shrink: 0;
     }
 
     .nav-actions::-webkit-scrollbar {
