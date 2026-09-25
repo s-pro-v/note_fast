@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pl" theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastNote Manager // Industrial HUD Text Studio</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mobile.css">
+</head>
+
+<body>
+
+    <div class="app-panel hud-bracket">
+        <!-- Górna belka nawigacji HUD -->
+        <header class="app-nav">
+            <div class="brand-badge">
+                <div class="btn-bg">
+                    <button id="toggleSidebarBtn" class="glass-btn icon-only" title="Przełącz listę notatek (Ctrl+B)">
+                        <i data-lucide="panel-left"></i>
+                    </button>
+                </div>
+                <div class="btn-bg">
+                    <div class="brand-icon">
+                        <i data-lucide="terminal"></i>
+                    </div>
+                </div>
+                <div class="btn-bg">
+                    <div class="brand-info">
+                        <h1 class="brand-title">FASTNOTE // INDUSTRIAL_HUD</h1>
+                        <p class="brand-sub">ARCHIVUM & EDITIO: s-note.json</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <!-- Kaseta synchronizacji z GitHub -->
+                <div class="btn-bg" title="Synchronizacja z GitHub">
+                    <button id="pullGithubBtn" class="glass-btn highlight" title="Pobierz najnowszy plik z GitHub">
+                        <i data-lucide="git-pull-request"></i>
+                        <span class="glass-btn__text">
+                            <span class="glass-btn__label">PULL</span>
+                            <span class="glass-btn__desc">SYNC CLOUD</span>
+                        </span>
+                    </button>
+
+                    <button id="pushGithubBtn" class="glass-btn success" title="Wyślij zmiany do GitHub">
+                        <i data-lucide="git-commit"></i>
+                        <span class="glass-btn__text">
+                            <span class="glass-btn__label">PUSH</span>
+                            <span class="glass-btn__desc">COMMIT</span>
+                        </span>
+                    </button>
+
+                    <div class="btn-divider"></div>
+
+                    <button id="openGithubConfigBtn" class="glass-btn icon-only" title="Konfiguracja repozytorium">
+                        <i data-lucide="settings"></i>
+                    </button>
+
+                    <button id="openDiagBtn" class="glass-btn icon-only" title="Dziennik diagnostyczny połączenia">
+                        <i data-lucide="activity"></i>
+                    </button>
+                </div>
+
+                <!-- Operacje na plikach lokalnych -->
+                <div class="btn-bg" title="Operacje na plikach lokalnych">
+                    <label for="fileUploadInput" class="glass-btn info" title="Wczytaj bazę z pliku .json">
+                        <i data-lucide="upload"></i>
+                        <span class="glass-btn__text">
+                            <span class="glass-btn__label">WCZYTAJ</span>
+                            <span class="glass-btn__desc">PLIK .JSON</span>
+                        </span>
+                    </label>
+                    <input type="file" id="fileUploadInput" accept=".json,application/json" class="hidden">
+
+                    <button id="openRawModalBtn" class="glass-btn info" title="Wklej ręcznie kod JSON">
+                        <i data-lucide="code"></i>
+                        <span class="glass-btn__text">
+                            <span class="glass-btn__label">KOD JSON</span>
+                            <span class="glass-btn__desc">WKLEJ TABLICĘ</span>
+                        </span>
+                    </button>
+
+                    <button id="exportJsonBtn" class="glass-btn info" title="Pobierz plik s-note.json">
+                        <i data-lucide="download"></i>
+                        <span class="glass-btn__text">
+                            <span class="glass-btn__label">EKSPORT</span>
+                            <span class="glass-btn__desc">POBIERZ .JSON</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Przycisk nowej notatki -->
+                <div class="btn-bg">
+                    <button id="addNoteBtn" class="glass-btn highlight btn-primary-add"
+                        title="Utwórz nowy dokument (Ctrl+N)">
+                        <i data-lucide="plus"></i>
+                        <span class="glass-btn__text">
+                            <span class="glass-btn__label">NOWA</span>
+                            <span class="glass-btn__desc">NOTATKA</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Przełącznik motywu -->
+                <div class="btn-bg">
+                    <button id="themeToggleBtn" class="glass-btn icon-only" title="Zmień motyw Light/Dark">
+                        <i data-lucide="sun"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Korpus główny -->
+        <div class="app-panels">
+            <!-- Pasek boczny: indeks notatek -->
+            <aside class="app-aside" id="appAside">
+                <div class="aside-header">
+                    <div class="btn-bg w-full">
+                        <div class="search-box">
+                            <i data-lucide="search" class="search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input"
+                                placeholder="[SZUKAJ W BAZIE NOTATEK]...">
+                            <button id="clearSearchBtn" class="search-clear-btn hidden"
+                                title="Wyczyść filtr szukania">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-bg flex-1 flex-col">
+                    <div id="notesListContainer" class="notes-tree-list"></div>
+                </div>
+            </aside>
+            <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+
+            <!-- Panel edytora i obszar roboczy -->
+            <main class="app-content">
+                <div class="status-bar">
+                    <div class="btn-bg">
+                        <div class="status-chip">
+                            <span>INDEKS:</span>
+                            <span id="filteredCountText" class="text-highlight">0 / 0</span>
+                        </div>
+                    </div>
+                    <div class="btn-bg">
+                        <div class="status-chip">
+                            <span>CEL REPO:</span>
+                            <span id="repoStatusIndicator" class="text-highlight">s-pro-v/fastnote:main</span>
+                        </div>
+                    </div>
+                    <div class="btn-bg status-chip-save">
+                        <div class="status-chip">
+                            <span>STATUS:</span>
+                            <span id="saveStatusIndicator" class="text-success">GOTOWY</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-panel hud-bracket">
+                    <div id="emptyDetailPlaceholder" class="editor-empty">
+                        <i data-lucide="hard-drive" class="empty-icon"></i>
+                        <p>[ BRAK WYBRANEJ NOTATKI ]</p>
+                        <span class="empty-subhint">Wybierz dokument z listy lub utwórz nowy rekord [+]</span>
+                    </div>
+
+                    <div id="activeNoteContainer" class="active-note-container hidden">
+                        <!-- Pasek metadanych i przełącznik widoków -->
+                        <div class="btn-bg w-full">
+                            <div class="editor-meta">
+                                <div class="meta-info">
+                                    <span class="meta-tag">UUID: <b id="activeNoteId">-</b></span>
+                                    <span class="meta-tag">DATA: <b id="activeNoteDate">-</b></span>
+                                </div>
+
+                                <!-- Przełączniki trybów pracy -->
+                                <div class="btn-bg">
+                                    <button id="modeEditBtn" class="view-mode-btn" title="Tryb edycji kodu (Ctrl+1)">
+                                        <i data-lucide="edit-3"></i>
+                                        <span>EDYCJA</span>
+                                    </button>
+                                    <button id="modeSplitBtn" class="view-mode-btn active"
+                                        title="Podgląd i edycja obok siebie (Ctrl+2)">
+                                        <i data-lucide="columns"></i>
+                                        <span>PODZIAŁ</span>
+                                    </button>
+                                    <button id="modePreviewBtn" class="view-mode-btn"
+                                        title="Tylko sformatowany podgląd (Ctrl+3)">
+                                        <i data-lucide="eye"></i>
+                                        <span>PODGLĄD</span>
+                                    </button>
+                                </div>
+
+                                <div class="btn-bg">
+                                    <button id="copyContentBtn" class="glass-btn meta-action-btn"
+                                        title="Kopiuj treść do schowka">
+                                        <i data-lucide="copy"></i>
+                                        <span>KOPIUJ</span>
+                                    </button>
+                                    <button id="deleteNoteBtn" class="glass-btn meta-action-btn danger-btn"
+                                        title="Usuń bieżącą notatkę">
+                                        <i data-lucide="trash-2"></i>
+                                        <span>USUŃ</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pole tytułu dokumentu -->
+                        <div class="btn-bg w-full">
+                            <div class="title-container">
+                                <div class="title-prefix">// TYTUŁ:</div>
+                                <input type="text" id="activeTitleInput" class="note-title-input"
+                                    placeholder="TYTUŁ DOKUMENTU...">
+                            </div>
+                        </div>
+
+                        <!-- Obszar roboczy: Edytor z numeracją linii + Odizolowana ramka podglądu -->
+                        <div id="editorWorkspace" class="editor-workspace mode-split">
+                            <div class="workspace-pane editor-pane">
+                                <div class="pane-header">
+                                    <span>// TEKST ŹRÓDŁOWY [SOURCE]</span>
+                                    <span id="languageBadge" class="pane-badge highlight">TEXT</span>
+                                    <span id="lineCountLabel" class="pane-badge">1 LINIA</span>
+                                </div>
+                                <div class="pane-body">
+                                    <div class="text-editor-carrier">
+                                        <div id="lineNumbersGutter" class="line-numbers-gutter">1</div>
+                                        <textarea id="activeContentInput" class="code-textarea"
+                                            placeholder="WPROWADŹ TEKST LUB KOD DOKUMENTU..."
+                                            spellcheck="false"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="workspace-divider" id="workspaceDivider"></div>
+
+                            <div class="workspace-pane preview-pane">
+                                <div class="pane-header">
+                                    <span>// PODGLĄD WYŚWIETLANIA [IZOLACJA_SANDBOX]</span>
+                                    <span class="pane-badge highlight">SANDBOX OK</span>
+                                </div>
+                                <div class="pane-body">
+                                    <iframe id="previewIframe" class="preview-iframe"
+                                        sandbox="allow-scripts allow-same-origin" title="Podgląd dokumentu"></iframe>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stopka statystyk i zapisu -->
+                        <div class="btn-bg w-full">
+                            <div class="editor-footer w-full">
+                                <div class="footer-stats">
+                                    <span id="charCountLabel">0 ZNAKÓW</span>
+                                    <span class="stat-bullet">•</span>
+                                    <span id="wordCountLabel">0 SŁÓW</span>
+                                    <span class="stat-bullet">•</span>
+                                    <span id="readingTimeLabel">&lt; 1 MIN</span>
+                                </div>
+                                <div class="footer-actions">
+                                    <span class="shortcut-tip">[CTRL+S: ZAPISZ]</span>
+                                    <div class="btn-bg">
+                                        <button id="saveNoteExplicitBtn" class="glass-btn highlight save-btn">
+                                            <i data-lucide="check"></i>
+                                            <span class="glass-btn__text">
+                                                <span class="glass-btn__label">ZAPISZ REKORD</span>
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Potwierdzenie Usunięcia Notatki (HUD Confirm) -->
+    <div id="deleteConfirmModalOverlay" class="modal-overlay"></div>
+    <div id="deleteConfirmModal" class="modal modal-narrow hud-bracket">
+        <div class="modal-header">
+            <span class="text-danger">// POTWIERDZENIE USUNIĘCIA</span>
+            <div class="btn-bg">
+                <button class="glass-btn icon-only modal-close-btn">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="btn-bg w-full">
+                <div class="editor-meta modal-meta-col w-full">
+                    <div>CZY NA PEWNO CHCESZ USUNĄĆ TĘ NOTATKĘ?</div>
+                    <div>TYTUŁ: <b id="deleteConfirmTitle" class="text-highlight">-</b></div>
+                    <div>UUID: <b id="deleteConfirmId">-</b></div>
+                </div>
+            </div>
+            <p class="modal-status-text text-danger">
+                [OSTRZEŻENIE]: Po potwierdzeniu rekord zostanie natychmiast usunięty lokalnie oraz automatycznie wysłany
+                jako commit do GitHub!
+            </p>
+        </div>
+        <div class="modal-footer">
+            <div class="btn-bg">
+                <button class="glass-btn modal-close-btn">ANULUJ</button>
+            </div>
+            <div class="btn-bg">
+                <button id="executeDeleteAndPushBtn" class="glass-btn danger-btn">
+                    <i data-lucide="trash-2"></i>
+                    <span>USUŃ I WYŚLIJ DO GITHUB</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Import surowego JSON -->
+    <div id="rawModalOverlay" class="modal-overlay"></div>
+    <div id="rawModal" class="modal hud-bracket">
+        <div class="modal-header">
+            <span>IMPORT KODU JSON [s-note.json]</span>
+            <div class="btn-bg">
+                <button class="glass-btn icon-only modal-close-btn">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="modal-field">
+                <span>WKLEJ SUROWĄ TABLICĘ REKORDÓW:</span>
+                <div class="btn-bg w-full">
+                    <textarea id="rawJsonTextarea" class="editor-textarea modal-textarea-fixed"
+                        placeholder="[ { &quot;id&quot;: &quot;...&quot;, &quot;data&quot;: &quot;...&quot;, &quot;note&quot;: &quot;...&quot; } ]"></textarea>
+                </div>
+            </div>
+            <div id="modalParseError" class="modal-field text-danger hidden"></div>
+        </div>
+        <div class="modal-footer">
+            <div class="btn-bg">
+                <button class="glass-btn modal-close-btn">ANULUJ</button>
+            </div>
+            <div class="btn-bg">
+                <button id="submitRawJsonBtn" class="glass-btn highlight">ZAŁADUJ DANE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Konfiguracja GitHub & Deszyfracja XOR z auth.json -->
+    <div id="githubModalOverlay" class="modal-overlay"></div>
+    <div id="githubModal" class="modal hud-bracket">
+        <div class="modal-header">
+            <span>KONFIGURACJA GITHUB REST API</span>
+            <div class="btn-bg">
+                <button class="glass-btn icon-only modal-close-btn">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="modal-grid-2">
+                <div class="modal-field">
+                    <span>REPOZYTORIUM (OWNER/REPO)</span>
+                    <div class="btn-bg w-full">
+                        <input id="ghRepoInput" type="text" class="hud-input" value="s-pro-v/fastnote">
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <span>GAŁĄŹ (BRANCH)</span>
+                    <div class="btn-bg w-full">
+                        <input id="ghBranchInput" type="text" class="hud-input" value="main">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-field">
+                <span>ŚCIEŻKA DO PLIKU</span>
+                <div class="btn-bg w-full">
+                    <input id="ghPathInput" type="text" class="hud-input" value="s-note.json">
+                </div>
+            </div>
+            <div class="modal-field">
+                <div class="modal-ctrl-row">
+                    <span>GITHUB TOKEN (PAT)</span>
+                    <div class="btn-bg">
+                        <button id="loadAuthPatBtn" type="button" class="glass-btn highlight"
+                            title="Pobierz i odszyfruj note_manager z auth.json">
+                            <i data-lucide="key"></i>
+                            <span>POBIERZ Z AUTH.JSON</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="btn-bg w-full">
+                    <input id="ghTokenInput" type="password" class="hud-input"
+                        placeholder="ghp_xxxxxxxxxxxx (Wymagany do repozytoriów prywatnych i zapisu)">
+                </div>
+            </div>
+            <div class="modal-field">
+                <span>BEZPOŚREDNI ADRES RAW (URL FALLBACK)</span>
+                <div class="btn-bg w-full">
+                    <input id="ghRawUrlInput" type="text" class="hud-input"
+                        value="https://raw.githubusercontent.com/s-pro-v/fastnote/refs/heads/main/s-note.json">
+                </div>
+            </div>
+            <div class="modal-ctrl-row">
+                <div class="btn-bg">
+                    <button id="testConnectionBtn" class="glass-btn">TEST POŁĄCZENIA</button>
+                </div>
+                <div class="btn-bg">
+                    <label class="modal-checkbox-label">
+                        <input type="checkbox" id="useCorsProxyToggle"> PROXY CORS (FALLBACK)
+                    </label>
+                </div>
+            </div>
+            <div id="ghModalStatus" class="editor-meta modal-status-box hidden"></div>
+        </div>
+        <div class="modal-footer">
+            <span id="fileShaBadge" class="modal-sha-text">SHA: BRAK</span>
+            <div class="btn-bg">
+                <button class="glass-btn modal-close-btn">ZAMKNIJ</button>
+            </div>
+            <div class="btn-bg">
+                <button id="saveGithubConfigBtn" class="glass-btn highlight">ZAPISZ KONFIGURACJĘ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Dialog zatwierdzania commita -->
+    <div id="commitModalOverlay" class="modal-overlay"></div>
+    <div id="commitModal" class="modal modal-narrow hud-bracket">
+        <div class="modal-header">
+            <span>WYŚLIJ COMMIT // GITHUB PUSH</span>
+            <div class="btn-bg">
+                <button class="glass-btn icon-only modal-close-btn">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="btn-bg w-full">
+                <div class="editor-meta modal-meta-col w-full">
+                    <div>REPO: <b id="commitTargetRepo">-</b></div>
+                    <div>GAŁĄŹ: <b id="commitTargetBranch">-</b></div>
+                    <div>ŚCIEŻKA: <b id="commitTargetPath">-</b></div>
+                </div>
+            </div>
+            <div class="modal-field">
+                <span>KOMENTARZ COMMITA:</span>
+                <div class="btn-bg w-full">
+                    <input id="commitMessageInput" type="text" class="hud-input"
+                        value="Aktualizacja s-note.json [FastNote HUD]">
+                </div>
+            </div>
+            <div id="commitErrorBox" class="modal-field text-danger hidden"></div>
+        </div>
+        <div class="modal-footer">
+            <div class="btn-bg">
+                <button class="glass-btn modal-close-btn">ANULUJ</button>
+            </div>
+            <div class="btn-bg">
+                <button id="executePushBtn" class="glass-btn success">WYŚLIJ COMMIT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Dziennik diagnostyczny połączenia -->
+    <div id="diagModalOverlay" class="modal-overlay"></div>
+    <div id="diagModal" class="modal hud-bracket">
+        <div class="modal-header">
+            <div class="diag-header-info">
+                <span class="diag-led-dot"></span>
+                <span>DZIENNIK DIAGNOSTYCZNY // PROTOKÓŁ SIECIOWY</span>
+            </div>
+            <div class="btn-bg">
+                <button class="glass-btn icon-only modal-close-btn" title="Zamknij (Esc)">✕</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="modal-ctrl-row">
+                <div class="diag-meta-bar">
+                    <span class="modal-status-text">REJESTR ZDARZEŃ GITHUB REST:</span>
+                    <span id="diagLogCount" class="pane-badge">0 WPISÓW</span>
+                </div>
+                <div class="btn-bg">
+                    <button id="copyDiagBtn" class="glass-btn meta-action-btn" title="Kopiuj zawartość dziennika">
+                        <i data-lucide="copy"></i>
+                        <span>KOPIUJ</span>
+                    </button>
+                    <button id="clearDiagBtn" class="glass-btn meta-action-btn" title="Wyczyść dziennik">
+                        <i data-lucide="trash-2"></i>
+                        <span>WYCZYŚĆ</span>
+                    </button>
+                </div>
+            </div>
+            <div class="btn-bg w-full">
+                <div id="diagLogTerminal" class="diag-terminal-screen w-full"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div class="btn-bg">
+                <button class="glass-btn modal-close-btn">ZAMKNIJ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
